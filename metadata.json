@@ -1,0 +1,6 @@
+{
+  "name": "FOCOM ILIAD",
+  "description": "L'application officielle du syndicat FOCOM de l'UES Iliad (Free, Centrapel, MCRA). Actualités, simulateur de droits, accords d'entreprise et contacts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

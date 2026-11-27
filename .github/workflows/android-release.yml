@@ -1,0 +1,184 @@
+name: Android CI & Release
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug:
+    name: Build APK de test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Rendre gradlew exécutable
+        run: chmod +x ./gradlew
+
+      - name: Accepter les licences SDK Android
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      - name: Configurer Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compiler et tester l'APK debug
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
+
+      - name: Publier l'APK de test
+        uses: actions/upload-artifact@v4
+        with:
+          name: focom-android-debug-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  build-release:
+    name: Build APK et AAB signés
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Rendre gradlew exécutable
+        run: chmod +x ./gradlew
+
+      - name: Accepter les licences SDK Android
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      - name: Configurer Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Vérifier les secrets de signature
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Le secret GitHub ${name} est manquant."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Restaurer et valider le keystore de publication
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          KEYSTORE_PATH="$RUNNER_TEMP/focom-release-key"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          test -s "$KEYSTORE_PATH"
+
+          if ! KEYSTORE_LIST="$(keytool -J-Duser.language=en -list -keystore "$KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>&1)"; then
+            echo "::error::Impossible d'ouvrir le keystore (ANDROID_KEYSTORE_PASSWORD incorrect ou ANDROID_KEYSTORE_BASE64 invalide)."
+            exit 1
+          fi
+
+          CLEAN_ALIAS="$(printf '%s' "$ANDROID_KEY_ALIAS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          PRIVATE_ALIASES="$(printf '%s\n' "$KEYSTORE_LIST" | awk -F',' '/,[[:space:]]*PrivateKeyEntry/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1); print $1}')"
+
+          if [ -z "$PRIVATE_ALIASES" ]; then
+            echo "::error::Aucune clé privée (PrivateKeyEntry) trouvée dans le keystore."
+            exit 1
+          fi
+
+          if printf '%s\n' "$PRIVATE_ALIASES" | grep -Fxq -- "$CLEAN_ALIAS"; then
+            RESOLVED_ALIAS="$CLEAN_ALIAS"
+          elif CASE_MATCH="$(printf '%s\n' "$PRIVATE_ALIASES" | grep -Fix -- "$CLEAN_ALIAS" | head -n 1 || true)" && [ -n "$CASE_MATCH" ]; then
+            echo "::warning::La casse de ANDROID_KEY_ALIAS diffère du keystore ; utilisation de l'alias exact trouvé."
+            RESOLVED_ALIAS="$CASE_MATCH"
+          else
+            ALIAS_COUNT="$(printf '%s\n' "$PRIVATE_ALIASES" | wc -l | tr -d '[:space:]')"
+            if [ "$ALIAS_COUNT" -eq 1 ]; then
+              RESOLVED_ALIAS="$PRIVATE_ALIASES"
+              echo "::warning::Le secret ANDROID_KEY_ALIAS ne correspondait pas. Utilisation automatique de l'unique clé privée du keystore ($RESOLVED_ALIAS)."
+            else
+              echo "::error::L'alias configuré dans ANDROID_KEY_ALIAS est introuvable. Aliases disponibles : $(printf '%s' "$PRIVATE_ALIASES" | tr '\n' ' ')"
+              exit 1
+            fi
+          fi
+
+          {
+            echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH"
+            echo "RESOLVED_KEY_ALIAS=$RESOLVED_ALIAS"
+          } >> "$GITHUB_ENV"
+
+      - name: Configurer .env Supabase (si défini)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            printf 'SUPABASE_URL=%s\nSUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_URL" "$SUPABASE_PUBLISHABLE_KEY" > .env
+            echo ".env Supabase configuré pour le build release."
+          else
+            echo "::warning::Secrets GitHub SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY absents : utilisation du repli GitHub/cache."
+          fi
+
+      - name: Compiler APK et AAB Release signés
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ env.RESOLVED_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew --no-daemon assembleRelease bundleRelease \
+            -PRELEASE_STORE_FILE="$ANDROID_KEYSTORE_PATH" \
+            -PRELEASE_STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
+            -PRELEASE_KEY_ALIAS="$ANDROID_KEY_ALIAS" \
+            -PRELEASE_KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+
+      - name: Exporter le certificat public d'importation (.pem)
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ env.RESOLVED_KEY_ALIAS }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/upload_certificate.pem"
+          keytool -exportcert -rfc \
+            -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" \
+            -file "$CERT_PATH"
+          keytool -printcert -file "$CERT_PATH" | grep -E "SHA1:|SHA256:" || true
+          echo "UPLOAD_CERT_PATH=$CERT_PATH" >> "$GITHUB_ENV"
+
+      - name: Publier APK et AAB signés
+        uses: actions/upload-artifact@v4
+        with:
+          name: focom-android-release-${{ github.run_number }}
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+            ${{ env.UPLOAD_CERT_PATH }}
+          if-no-files-found: error
+          retention-days: 30

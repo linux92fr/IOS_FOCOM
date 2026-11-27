@@ -1,0 +1,46 @@
+{
+  "newsList": [
+    {
+      "id": "news_github_1",
+      "title": "Actualite synchronisee depuis GitHub",
+      "description": "Cette actualite vient du fichier data/focom-content.json du depot GitHub.",
+      "content": "Modifiez ce contenu dans GitHub pour mettre a jour l'application sans republier l'APK.",
+      "date": "22 mai 2026",
+      "category": "Vie Syndicale",
+      "isHotState": true,
+      "imageUrl": null
+    }
+  ],
+  "rightsList": [
+    {
+      "id": "right_github_1",
+      "title": "Exemple de droit salarie",
+      "category": "Legislation",
+      "summary": "Resume court affiche dans la liste des droits.",
+      "detailMarkdown": "Detail complet du droit, compatible avec du texte structure.",
+      "focomAdvice": "Conseil FOCOM affiche dans la fiche detaillee."
+    }
+  ],
+  "delegatesList": [
+    {
+      "id": "delegate_github_1",
+      "name": "Prenom Nom",
+      "role": "Delegue syndical",
+      "entity": "Free Mobile",
+      "region": "National",
+      "email": "contact@example.org",
+      "phone": "06 00 00 00 00",
+      "avatarLetters": "PN"
+    }
+  ],
+  "publicationsList": [
+    {
+      "id": "pub_github_1",
+      "title": "Journal FOCOM",
+      "type": "Journal",
+      "date": "Mai 2026",
+      "thumbnailUrl": null,
+      "pdfUrl": "https://example.org/document.pdf"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Circle background in white -->
+    <path
+        android:pathData="M 54 54 m -35 0 a 35 35 0 1 0 70 0 a 35 35 0 1 0 -70 0"
+        android:fillColor="#FFFFFF"/>
+
+    <!-- Red Ring (Outer circular border) -->
+    <path
+        android:pathData="M 54 54 m -33 0 a 33 33 0 1 0 66 0 a 33 33 0 1 0 -66 0"
+        android:strokeColor="#D62828"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"/>
+
+    <!-- Sky Blue/Azure segment on top-left curve -->
+    <path
+        android:pathData="M 72 23 A 33 33 0 0 0 23 72"
+        android:strokeColor="#5EC9E5"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"/>
+
+    <!-- Central FO logo (Red, Bold, Stylized) -->
+    <!-- F Character -->
+    <path
+        android:pathData="M 34 35 h 14 v 4.5 h -9.5 v 5.5 h 8 v 4.5 h -8 v 12.5 h -4.5 z"
+        android:fillColor="#D62828"/>
+
+    <!-- O Character -->
+    <path
+        android:pathData="M 64 35 c -6 0 -10.5 4.5 -10.5 13.5 s 4.5 13.5 10.5 13.5 s 10.5 -4.5 10.5 -13.5 s -4.5 -13.5 -10.5 -13.5 z M 64 39.5 c 3.2 0 5.5 3.5 5.5 9 s -2.3 9 -5.5 9 s -5.5 -3.5 -5.5 -9 s 2.3 -9 5.5 -9 z"
+        android:fillColor="#D62828"/>
+
+    <!-- Com text block underneath -->
+    <!-- C Character (cursive/stylized cursive bold) -->
+    <path
+        android:pathData="M 38.5 69 c -1.8 0 -3 -1.2 -3 -3 s 1.2 -3 3 -3 c 1.4 0 2.2 0.8 2.6 1.7 l 3.2 -1.2 c -1 -2.5 -3.2 -4 -5.8 -4 c -4.8 0 -7.5 3.5 -7.5 6.5 s 2.7 6.5 7.5 6.5 c 2.6 0 4.8 -1.5 5.8 -4 l -3.2 -1.2 c -0.4 0.9 -1.2 1.7 -2.6 1.7 z"
+        android:fillColor="#D62828"/>
+
+    <!-- o Character -->
+    <path
+        android:pathData="M 52.5 63 c -2.8 0 -4.5 2 -4.5 4.2 s 1.7 4.2 4.5 4.2 s 4.5 -2 4.5 -4.2 s -1.7 -4.2 -4.5 -4.2 z M 52.5 65.5 c 1.2 0 1.8 1 1.8 2.2 s -0.6 2.2 -1.8 2.2 s -1.8 -1 -1.8 -2.2 s 0.6 -2.2 1.8 -2.2 z"
+        android:fillColor="#D62828"/>
+
+    <!-- m Character -->
+    <path
+        android:pathData="M 59 63.5 v 7.5 h 2.5 v -4 c 0 -0.8 0.4 -1.2 1 -1.2 s 1 0.4 1 1.2 v 4 h 2.5 v -4 c 0 -0.8 0.4 -1.2 1 -1.2 s 1 0.4 1 1.2 v 4 h 2.5 v -4.8 c 0 -2.2 -1.2 -3.2 -3.2 -3.2 c -1.4 0 -2.2 0.8 -2.6 1.6 c -0.4 -0.8 -1.2 -1.6 -2.6 -1.6 c -1.2 0 -2 0.6 -2.4 1.4 v -1.1 z"
+        android:fillColor="#D62828"/>
+
+    <!-- Red curved swoosh underline under Com -->
+    <path
+        android:pathData="M 31 74.5 C 45 78.5, 61 76.5, 75 72.5 C 61 74, 45 75, 31 74.5 Z"
+        android:fillColor="#D62828"/>
+
+</vector>
