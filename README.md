@@ -90,3 +90,5 @@ $env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
 Les actualites et certains contenus peuvent etre charges depuis Supabase ou depuis le depot web FOCOM UES ILIAD.
 
 Si les donnees distantes sont indisponibles, l'application conserve des contenus de secours embarques afin de rester utilisable.
+
+> Import vérifié le 27/11/2026
